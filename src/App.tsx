@@ -247,20 +247,24 @@ export const App = () => {
   const totalMass = useMemo(() => simulation.system.bodies.reduce((sum, body) => sum + body.mass, 0), [simulation.system.bodies]);
   const starCount = useMemo(() => galaxy.filter((star) => star.catalog).length, [galaxy]);
   const selectedBodyMass = selectedBody ? formatNumber(selectedBody.mass, 2) : 'none';
+  const accelerationRows = useMemo(() => simulation.system.bodies
+    .map((body) => ({
+      body,
+      acceleration: Math.hypot(body.acceleration.x, body.acceleration.y, body.acceleration.z)
+    }))
+    .sort((a, b) => b.acceleration - a.acceleration)
+    .slice(0, 6), [simulation.system.bodies]);
+  const maxAcceleration = accelerationRows[0]?.acceleration || 1;
+  const selectedAcceleration = selectedBody ? Math.hypot(selectedBody.acceleration.x, selectedBody.acceleration.y, selectedBody.acceleration.z) : 0;
+  const selectedVelocity = selectedBody ? Math.hypot(selectedBody.velocity.x, selectedBody.velocity.y, selectedBody.velocity.z) : 0;
 
   return (
     <main className="app-shell">
       <header className="top-bar">
         <div>
           <span className="app-mark">WebSpace Engine</span>
-          <strong>Algorithms Workbench</strong>
+          <strong>Orbital Mechanics Console</strong>
         </div>
-        <nav aria-label="Project stack">
-          <span>TypeScript</span>
-          <span>Three.js</span>
-          <span>Web Worker</span>
-          <span>Octree</span>
-        </nav>
       </header>
       <div className="dashboard-layout">
         <section className="dashboard-column setup-column">
@@ -291,80 +295,11 @@ export const App = () => {
           />
         </section>
 
-        <section className="dashboard-column analysis-column">
-          <section className="perf-panel" aria-label="Runtime performance">
-            <div>
-              <span>FPS</span>
-              <strong>{formatNumber(stats.fps, 0)}</strong>
-            </div>
-            <div>
-              <span>Bodies</span>
-              <strong>{stats.bodyCount.toLocaleString()}</strong>
-            </div>
-            <div>
-              <span>Solver</span>
-              <strong>{modeLabel(simulation.mode)}</strong>
-            </div>
-            <div className={workerBusy ? 'worker-busy' : ''}>
-              <span>Kernel</span>
-              <strong>{formatNumber(stats.simulationMs, 2)} ms</strong>
-            </div>
-            <div>
-              <span>Frame</span>
-              <strong>{formatNumber(stats.renderMs, 2)} ms</strong>
-            </div>
-          </section>
-
-          <aside className="hud-panel benchmark-panel">
-            <div className="panel-kicker">Algorithm benchmark</div>
-            <h2>Gravity solver comparison</h2>
-            <div className="benchmark-list">
-              {benchmarkScenarios.map((scenario) => {
-                const result = benchmarkResults[scenario.id];
-                const running = benchmarkBusy === scenario.id;
-                return (
-                  <button type="button" key={scenario.id} onClick={() => handleBenchmark(scenario.id)} disabled={Boolean(benchmarkBusy)}>
-                    {running ? 'Running...' : scenario.label}
-                    <small>
-                      {result
-                        ? `${formatNumber(result.directMs, 1)} ms direct / ${formatNumber(result.barnesHutMs, 1)} ms Barnes-Hut / ${formatNumber(result.speedup, 1)}x`
-                        : `${scenario.bodyCount.toLocaleString()} bodies, one worker step`}
-                    </small>
-                  </button>
-                );
-              })}
-            </div>
-          </aside>
-
-          <aside className="hud-panel engineering-panel">
-            <div className="panel-kicker">Architecture</div>
-            <h2>Pipeline</h2>
-            <dl className="compact-data">
-              <div>
-                <dt>source</dt>
-                <dd>{galaxyMode === 'real' ? `${starCount.toLocaleString()} HYG records` : `${galaxy.length.toLocaleString()} generated records`}</dd>
-              </div>
-              <div>
-                <dt>worker</dt>
-                <dd>{simulation.mode === 'kepler' ? 'UI thread analytic update' : 'off-main-thread velocity-Verlet'}</dd>
-              </div>
-              <div>
-                <dt>complexity</dt>
-                <dd>{simulation.mode === 'barnes-hut' ? 'octree approximation' : simulation.mode === 'n-body' ? 'pairwise accumulator' : 'closed-form orbit step'}</dd>
-              </div>
-              <div>
-                <dt>total mass</dt>
-                <dd>{formatNumber(totalMass, 0)} simulation units</dd>
-              </div>
-            </dl>
-          </aside>
-        </section>
-
         <section className="dashboard-column output-column">
           <section className="simulation-card">
             <div className="simulation-card-header">
-              <span>3D output viewport</span>
               <strong>{simulation.system.name}</strong>
+              <span>{galaxyMode === 'real' ? `${starCount.toLocaleString()} HYG stars` : `${galaxy.length.toLocaleString()} procedural stars`}</span>
             </div>
             <div className="simulation-window">
               <SpaceViewport
@@ -383,6 +318,82 @@ export const App = () => {
                   cameraRef.current = position;
                 }}
               />
+            </div>
+            <div className="gravity-visualizers" aria-label="Gravity visualizers">
+              <section className="gravity-panel">
+                <div className="panel-kicker">Gravity</div>
+                <h2>Field Strength</h2>
+                <div className="metric-strip">
+                  <div>
+                    <span>bodies</span>
+                    <strong>{stats.bodyCount.toLocaleString()}</strong>
+                  </div>
+                  <div>
+                    <span>solver</span>
+                    <strong>{modeLabel(simulation.mode)}</strong>
+                  </div>
+                  <div className={workerBusy ? 'worker-busy' : ''}>
+                    <span>step</span>
+                    <strong>{formatNumber(stats.simulationMs, 2)} ms</strong>
+                  </div>
+                  <div>
+                    <span>mass</span>
+                    <strong>{formatNumber(totalMass, 0)}</strong>
+                  </div>
+                </div>
+                <div className="force-bars">
+                  {accelerationRows.map(({ body, acceleration }) => (
+                    <div className="force-row" key={body.id}>
+                      <span>{body.name}</span>
+                      <div aria-hidden="true">
+                        <i style={{ width: `${Math.max(2, (acceleration / maxAcceleration) * 100)}%` }} />
+                      </div>
+                      <strong>{formatNumber(acceleration, 3)}</strong>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="gravity-panel">
+                <div className="panel-kicker">Selected body</div>
+                <h2>{selectedBody?.name ?? 'No selection'}</h2>
+                <dl className="vector-grid">
+                  <div>
+                    <dt>mass</dt>
+                    <dd>{selectedBodyMass}</dd>
+                  </div>
+                  <div>
+                    <dt>velocity</dt>
+                    <dd>{formatNumber(selectedVelocity, 3)}</dd>
+                  </div>
+                  <div>
+                    <dt>acceleration</dt>
+                    <dd>{formatNumber(selectedAcceleration, 3)}</dd>
+                  </div>
+                  <div>
+                    <dt>orbit</dt>
+                    <dd>{selectedBody?.orbit ? `a ${formatNumber(selectedBody.orbit.semiMajorAxis, 0)} / e ${formatNumber(selectedBody.orbit.eccentricity, 2)}` : 'free'}</dd>
+                  </div>
+                </dl>
+              </section>
+
+              <section className="gravity-panel benchmark-panel">
+                <div className="panel-kicker">Direct vs Barnes-Hut</div>
+                <h2>Solver Bench</h2>
+                <div className="benchmark-table">
+                  {benchmarkScenarios.map((scenario) => {
+                    const result = benchmarkResults[scenario.id];
+                    const running = benchmarkBusy === scenario.id;
+                    return (
+                      <button type="button" key={scenario.id} onClick={() => handleBenchmark(scenario.id)} disabled={Boolean(benchmarkBusy)}>
+                        <span>{running ? 'running' : scenario.label}</span>
+                        <strong>{result ? `${formatNumber(result.speedup, 1)}x` : `${scenario.bodyCount.toLocaleString()}`}</strong>
+                        <small>{result ? `${formatNumber(result.directMs, 1)} / ${formatNumber(result.barnesHutMs, 1)} ms` : 'sample'}</small>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
             </div>
           </section>
 

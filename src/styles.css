@@ -45,7 +45,7 @@ button {
   color: var(--text-hard);
   background: #ffffff;
   border: 1px solid var(--line);
-  border-radius: 5px;
+  border-radius: 2px;
   padding: 0.48rem 0.62rem;
   font-family: var(--mono);
   font-size: 0.74rem;
@@ -70,7 +70,7 @@ input {
   color: var(--text-hard);
   background: #ffffff;
   border: 1px solid var(--line);
-  border-radius: 5px;
+  border-radius: 2px;
   padding: 0.58rem 0.62rem;
   font-family: var(--mono);
   font-size: 0.76rem;
@@ -104,7 +104,6 @@ input {
 }
 
 .top-bar strong,
-.top-bar nav,
 .app-mark {
   font-family: var(--mono);
 }
@@ -120,23 +119,9 @@ input {
   font-weight: 700;
 }
 
-.top-bar nav {
-  display: flex;
-  gap: 0.45rem;
-}
-
-.top-bar nav span {
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: #ffffff;
-  padding: 0.18rem 0.48rem;
-  color: var(--text-soft);
-  font-size: 0.68rem;
-}
-
 .dashboard-layout {
   display: grid;
-  grid-template-columns: minmax(300px, 0.95fr) minmax(380px, 1.2fr) minmax(360px, 1fr);
+  grid-template-columns: minmax(300px, 340px) minmax(0, 1fr);
   gap: 1rem;
   min-height: 0;
   padding: 1rem;
@@ -152,24 +137,23 @@ input {
 }
 
 .setup-column,
-.analysis-column {
+.output-column {
   overflow: auto;
   padding-right: 0.1rem;
 }
 
 .output-column {
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto;
 }
 
 .hud-panel,
-.perf-panel,
 .time-console,
 .simulation-card {
   color: var(--text-hard);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 2px;
   background: var(--panel);
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  box-shadow: none;
 }
 
 .hud-panel {
@@ -185,7 +169,6 @@ input {
 .field-label,
 .compact-data dt,
 .data-grid dt,
-.perf-panel span,
 .console-title span,
 .simulation-card-header span {
   color: var(--text-soft);
@@ -249,7 +232,7 @@ p {
   gap: 0;
   margin: 0 0 1rem;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 2px;
   overflow: hidden;
   background: #fbfcfd;
 }
@@ -341,32 +324,6 @@ small {
   padding: 0;
 }
 
-.perf-panel {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(70px, 1fr));
-  gap: 0;
-  padding: 0.5rem;
-}
-
-.perf-panel div {
-  min-width: 0;
-  border-left: 1px solid var(--line);
-  padding: 0.35rem 0.55rem;
-}
-
-.perf-panel div:first-child {
-  border-left: 0;
-}
-
-.perf-panel strong {
-  display: block;
-  margin-top: 0.18rem;
-  color: var(--text-hard);
-  font-family: var(--mono);
-  font-size: 1rem;
-  font-weight: 700;
-}
-
 .worker-busy strong {
   color: var(--good);
 }
@@ -408,7 +365,7 @@ small {
 
 .simulation-window {
   position: relative;
-  height: clamp(260px, 38vh, 390px);
+  height: clamp(320px, 48vh, 560px);
   min-height: 0;
   background: #030712;
 }
@@ -429,7 +386,7 @@ small {
   grid-template-columns: 42% 58%;
   gap: 0.45rem 0.75rem;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 2px;
   background: #fbfcfd;
   padding: 0.62rem;
 }
@@ -438,12 +395,154 @@ small {
   display: inline-flex;
   margin-bottom: 0.8rem;
   padding: 0.24rem 0.5rem;
-  border: 1px solid #bbf7d0;
-  border-radius: 999px;
-  background: #f0fdf4;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: #ffffff;
   color: var(--good);
   font-family: var(--mono);
   font-size: 0.72rem;
+}
+
+.gravity-visualizers {
+  display: grid;
+  grid-template-columns: minmax(320px, 1.25fr) minmax(240px, 0.9fr) minmax(280px, 1fr);
+  gap: 0;
+  border-top: 1px solid var(--line);
+  background: #ffffff;
+}
+
+.gravity-panel {
+  min-width: 0;
+  border-left: 1px solid var(--line);
+  padding: 0.8rem;
+}
+
+.gravity-panel:first-child {
+  border-left: 0;
+}
+
+.gravity-panel h2 {
+  margin-bottom: 0.6rem;
+}
+
+.metric-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid var(--line);
+  background: #fbfcfd;
+}
+
+.metric-strip div {
+  min-width: 0;
+  border-left: 1px solid var(--line);
+  padding: 0.46rem 0.52rem;
+}
+
+.metric-strip div:first-child {
+  border-left: 0;
+}
+
+.metric-strip span,
+.force-row span,
+.vector-grid dt,
+.benchmark-table small {
+  color: var(--text-soft);
+  font-family: var(--mono);
+  font-size: 0.66rem;
+}
+
+.metric-strip strong,
+.force-row strong,
+.vector-grid dd,
+.benchmark-table strong {
+  color: var(--text-hard);
+  font-family: var(--mono);
+  font-size: 0.76rem;
+}
+
+.metric-strip strong {
+  display: block;
+  margin-top: 0.16rem;
+}
+
+.force-bars {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0.65rem;
+}
+
+.force-row {
+  display: grid;
+  grid-template-columns: minmax(96px, 0.8fr) minmax(100px, 1.4fr) minmax(64px, auto);
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.force-row > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.force-row div {
+  height: 8px;
+  border: 1px solid var(--line);
+  background: #f8fafc;
+}
+
+.force-row i {
+  display: block;
+  height: 100%;
+  background: #0f766e;
+}
+
+.vector-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+  border: 1px solid var(--line);
+  background: #fbfcfd;
+}
+
+.vector-grid div {
+  min-width: 0;
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+  padding: 0.52rem;
+}
+
+.vector-grid div:nth-child(-n + 2) {
+  border-top: 0;
+}
+
+.vector-grid div:nth-child(odd) {
+  border-left: 0;
+}
+
+.vector-grid dd {
+  margin: 0.18rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.benchmark-table {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.benchmark-table button {
+  display: grid;
+  grid-template-columns: minmax(110px, 1fr) auto auto;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  text-align: left;
+}
+
+.benchmark-table button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .empty-state {
@@ -467,7 +566,7 @@ small {
   }
 
   .setup-column,
-  .analysis-column {
+  .output-column {
     overflow: visible;
   }
 
@@ -485,20 +584,35 @@ small {
     padding: 0.75rem 1rem;
   }
 
-  .top-bar nav {
-    flex-wrap: wrap;
-  }
-
-  .perf-panel {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .time-console label,
   .seed-row,
   .button-row,
   .spawn-row,
   .mode-switch {
     display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .gravity-visualizers,
+  .metric-strip,
+  .vector-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .gravity-panel,
+  .metric-strip div,
+  .vector-grid div {
+    border-left: 0;
+  }
+
+  .gravity-panel,
+  .metric-strip div,
+  .vector-grid div:nth-child(-n + 2) {
+    border-top: 1px solid var(--line);
+  }
+
+  .benchmark-table button,
+  .force-row {
     grid-template-columns: 1fr;
   }
 }
