@@ -46,6 +46,68 @@ const makeRoundStarTexture = (): THREE.CanvasTexture => {
   return texture;
 };
 
+const makeGalaxyGeometry = (galaxy: GalaxyStar[]): THREE.BufferGeometry => {
+  const geometry = new THREE.BufferGeometry();
+  const positions = new Float32Array(galaxy.length * 3);
+  const colors = new Float32Array(galaxy.length * 3);
+  const sizes = new Float32Array(galaxy.length);
+  const color = new THREE.Color();
+
+  galaxy.forEach((star, index) => {
+    positions[index * 3] = star.position.x;
+    positions[index * 3 + 1] = star.position.y;
+    positions[index * 3 + 2] = star.position.z;
+    color.set(star.color);
+    colors[index * 3] = color.r;
+    colors[index * 3 + 1] = color.g;
+    colors[index * 3 + 2] = color.b;
+    sizes[index] = star.radius;
+  });
+
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+  return geometry;
+};
+
+const makeGalaxyMaterial = (pointScale: number, opacity: number): THREE.ShaderMaterial => new THREE.ShaderMaterial({
+  uniforms: {
+    pointScale: { value: pointScale },
+    opacity: { value: opacity }
+  },
+  vertexShader: `
+    attribute float size;
+    uniform float pointScale;
+    varying vec3 starColor;
+
+    void main() {
+      starColor = color;
+      vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+      gl_PointSize = size * pointScale;
+      gl_Position = projectionMatrix * mvPosition;
+    }
+  `,
+  fragmentShader: `
+    varying vec3 starColor;
+    uniform float opacity;
+
+    void main() {
+      vec2 centered = gl_PointCoord - vec2(0.5);
+      float distanceFromCenter = length(centered);
+      float core = smoothstep(0.5, 0.0, distanceFromCenter);
+      float glow = smoothstep(0.5, 0.12, distanceFromCenter) * 0.42;
+      float alpha = max(core, glow) * opacity;
+      if (alpha < 0.01) discard;
+      gl_FragColor = vec4(starColor, alpha);
+    }
+  `,
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+  fog: false,
+  vertexColors: true
+});
+
 const makeOrbitLine = (body: CelestialBody, parent?: CelestialBody): THREE.Line | undefined => {
   if (!body.orbit) return undefined;
   const points: THREE.Vector3[] = [];
@@ -73,6 +135,7 @@ export const SpaceViewport = ({ galaxy, simulation, selectedId, onSelect, onStar
   const asteroidInstancedRef = useRef<{ mesh: THREE.InstancedMesh; bodies: CelestialBody[] } | null>(null);
   const selectedMarkerRef = useRef<THREE.Mesh | null>(null);
   const starMeshRef = useRef<THREE.Points | null>(null);
+  const starGlowRef = useRef<THREE.Points | null>(null);
   const galaxyRef = useRef<GalaxyStar[]>(galaxy);
   const simulationRef = useRef(simulation);
   const callbacksRef = useRef({ onSelect, onStarSelect, onStats, onCamera });
@@ -119,53 +182,17 @@ export const SpaceViewport = ({ galaxy, simulation, selectedId, onSelect, onStar
     trailGroupRef.current = trailGroup;
     scene.add(orbitGroup, trailGroup, bodyGroup);
 
-    const galaxyGeometry = new THREE.BufferGeometry();
-    const positions = new Float32Array(galaxy.length * 3);
-    const colors = new Float32Array(galaxy.length * 3);
-    const color = new THREE.Color();
-    galaxy.forEach((star, index) => {
-      positions[index * 3] = star.position.x;
-      positions[index * 3 + 1] = star.position.y;
-      positions[index * 3 + 2] = star.position.z;
-      color.set(star.color);
-      colors[index * 3] = color.r;
-      colors[index * 3 + 1] = color.g;
-      colors[index * 3 + 2] = color.b;
-    });
-    galaxyGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    galaxyGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    const roundStarTexture = makeRoundStarTexture();
-    const galaxyMaterial = new THREE.PointsMaterial({
-      size: 7.5,
-      sizeAttenuation: false,
-      map: roundStarTexture,
-      alphaTest: 0.02,
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.92,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      fog: false
-    });
+    const galaxyGeometry = makeGalaxyGeometry(galaxy);
+    const galaxyMaterial = makeGalaxyMaterial(1, 0.9);
     const starMesh = new THREE.Points(galaxyGeometry, galaxyMaterial);
     starMeshRef.current = starMesh;
     scene.add(starMesh);
 
     const starGlow = new THREE.Points(
       galaxyGeometry,
-      new THREE.PointsMaterial({
-        size: 22,
-        sizeAttenuation: false,
-        map: roundStarTexture,
-        alphaTest: 0.01,
-        vertexColors: true,
-        transparent: true,
-        opacity: 0.22,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        fog: false
-      })
+      makeGalaxyMaterial(3.2, 0.24)
     );
+    starGlowRef.current = starGlow;
     scene.add(starGlow);
 
     scene.add(new THREE.AmbientLight('#94a3b8', 0.18));
@@ -262,10 +289,25 @@ export const SpaceViewport = ({ galaxy, simulation, selectedId, onSelect, onStar
       window.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('mousemove', onMouseMove);
       renderer.domElement.removeEventListener('pointerdown', onPointerDown);
+      starMesh.geometry.dispose();
+      (starMesh.material as THREE.Material).dispose();
+      (starGlow.material as THREE.Material).dispose();
       renderer.dispose();
       mount.removeChild(renderer.domElement);
     };
   }, []);
+
+  useEffect(() => {
+    const starMesh = starMeshRef.current;
+    const starGlow = starGlowRef.current;
+    if (!starMesh || !starGlow) return;
+
+    const nextGeometry = makeGalaxyGeometry(galaxy);
+    const previousGeometry = starMesh.geometry;
+    starMesh.geometry = nextGeometry;
+    starGlow.geometry = nextGeometry;
+    previousGeometry.dispose();
+  }, [galaxy]);
 
   useEffect(() => {
     const bodyGroup = bodyGroupRef.current;

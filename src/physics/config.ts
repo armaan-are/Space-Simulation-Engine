@@ -7,6 +7,7 @@ export const defaultPhysicsConfig: PhysicsConfig = {
   collisionMerge: true,
   maxTrailPoints: 180,
   integration: 'velocity-verlet',
+  gravitySolver: 'direct',
   barnesHutTheta: 0.7
 };
 

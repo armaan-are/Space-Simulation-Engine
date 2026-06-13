@@ -7,10 +7,10 @@ import { stepNBody } from '../physics/nbody';
 const ctx: DedicatedWorkerGlobalScope = self as unknown as DedicatedWorkerGlobalScope;
 
 ctx.onmessage = (event: MessageEvent<WorkerRequest>) => {
-  const started = performance.now();
   const request = event.data;
 
   if (request.type === 'step') {
+    const started = performance.now();
     const bodies = stepNBody(request.bodies, request.deltaSeconds, request.config, request.trailsEnabled);
     const response: WorkerResponse = {
       type: 'stepped',
@@ -22,21 +22,42 @@ ctx.onmessage = (event: MessageEvent<WorkerRequest>) => {
   }
 
   const bodies = generateBenchmarkBodies(request.scenario);
-  const next = stepNBody(
+  const directStarted = performance.now();
+  const directNext = stepNBody(
     bodies,
     60,
     {
       ...request.config,
-      collisionMerge: request.scenario.includeCollisions
+      collisionMerge: request.scenario.includeCollisions,
+      gravitySolver: 'direct'
     },
     false
   );
+  const directMs = performance.now() - directStarted;
+
+  const barnesHutStarted = performance.now();
+  const barnesHutNext = stepNBody(
+    bodies,
+    60,
+    {
+      ...request.config,
+      collisionMerge: request.scenario.includeCollisions,
+      gravitySolver: 'barnes-hut'
+    },
+    false
+  );
+  const barnesHutMs = performance.now() - barnesHutStarted;
+
   const response: WorkerResponse = {
     type: 'benchmarkResult',
-    scenarioId: request.scenario.id,
-    bodyCount: request.scenario.bodyCount,
-    simulationMs: performance.now() - started,
-    mergedBodies: request.scenario.bodyCount - next.length
+    result: {
+      scenarioId: request.scenario.id,
+      bodyCount: request.scenario.bodyCount,
+      directMs,
+      barnesHutMs,
+      speedup: directMs / Math.max(barnesHutMs, 0.001),
+      mergedBodies: Math.max(request.scenario.bodyCount - directNext.length, request.scenario.bodyCount - barnesHutNext.length)
+    }
   };
   ctx.postMessage(response);
 };

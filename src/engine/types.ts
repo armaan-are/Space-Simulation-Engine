@@ -44,6 +44,13 @@ export type GalaxyStar = {
   color: string;
   mass: number;
   radius: number;
+  distanceLy?: number;
+  apparentMagnitude?: number;
+  absoluteMagnitude?: number;
+  spectralType?: string;
+  luminositySolar?: number;
+  radiusSolar?: number;
+  catalog?: string;
 };
 
 export type StarSystem = {
@@ -54,7 +61,9 @@ export type StarSystem = {
   createdAt: number;
 };
 
-export type SimulationMode = 'kepler' | 'n-body';
+export type SimulationMode = 'kepler' | 'n-body' | 'barnes-hut';
+
+export type GravitySolver = 'direct' | 'barnes-hut';
 
 export type SimulationState = {
   system: StarSystem;
@@ -71,6 +80,7 @@ export type PhysicsConfig = {
   collisionMerge: boolean;
   maxTrailPoints: number;
   integration: 'velocity-verlet';
+  gravitySolver: GravitySolver;
   barnesHutTheta?: number;
 };
 
@@ -95,6 +105,15 @@ export type PerformanceStats = {
   bodyCount: number;
   simulationMs: number;
   renderMs: number;
+};
+
+export type BenchmarkResult = {
+  scenarioId: string;
+  bodyCount: number;
+  directMs: number;
+  barnesHutMs: number;
+  speedup: number;
+  mergedBodies: number;
 };
 
 export type SavedLocation = {
@@ -127,8 +146,5 @@ export type WorkerResponse =
     }
   | {
       type: 'benchmarkResult';
-      scenarioId: string;
-      bodyCount: number;
-      simulationMs: number;
-      mergedBodies: number;
+      result: BenchmarkResult;
     };

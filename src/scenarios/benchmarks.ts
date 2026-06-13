@@ -5,7 +5,7 @@ import { SeededRandom, childSeed } from '../utils/seededRandom';
 export const benchmarkScenarios: BenchmarkScenario[] = [
   { id: 'bodies-100', label: '100 body swarm', bodyCount: 100, seed: 'benchmark-100', includeCollisions: true },
   { id: 'bodies-1000', label: '1,000 body belt', bodyCount: 1000, seed: 'benchmark-1000', includeCollisions: false },
-  { id: 'bodies-10000', label: '10,000 body stress', bodyCount: 10000, seed: 'benchmark-10000', includeCollisions: false }
+  { id: 'bodies-2500', label: '2,500 body stress', bodyCount: 2500, seed: 'benchmark-2500', includeCollisions: false }
 ];
 
 export const generateBenchmarkBodies = (scenario: BenchmarkScenario): CelestialBody[] => {
